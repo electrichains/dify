@@ -12,6 +12,7 @@ from configs import dify_config
 from constants import UUID_NIL
 from core.app.app_config.easy_ui_based_app.model_config.converter import ModelConfigConverter
 from core.app.app_config.features.file_upload.manager import FileUploadConfigManager
+from core.app.apps import cus1418_probe
 from core.app.apps.base_app_queue_manager import AppQueueManager, PublishFrom
 from core.app.apps.chat.app_config_manager import ChatAppConfigManager
 from core.app.apps.chat.app_runner import ChatAppRunner
@@ -195,6 +196,8 @@ class ChatAppGenerator(MessageBasedAppGenerator):
             # new thread with request context
             @copy_current_request_context
             def worker_with_context():
+                # First statement of the greenlet body: proves it was scheduled.
+                cus1418_probe.mark("G1_5_greenlet_entered", message.id)
                 return context.run(
                     self._generate_worker,
                     flask_app=current_app._get_current_object(),  # type: ignore
@@ -206,9 +209,11 @@ class ChatAppGenerator(MessageBasedAppGenerator):
 
             worker_thread = threading.Thread(target=worker_with_context)
 
-            logger.info("CUS1418 G0 thread_starting message_id=%s", message.id)
+            cus1418_probe.mark("G0_thread_starting", message.id)
             worker_thread.start()
-            logger.info("CUS1418 G1 thread_started message_id=%s", message.id)
+            cus1418_probe.mark(
+                "G1_thread_started", message.id, alive=worker_thread.is_alive(), ident=worker_thread.ident
+            )
 
             # return response or stream generator
             response = self._handle_response(
@@ -240,12 +245,12 @@ class ChatAppGenerator(MessageBasedAppGenerator):
         :return:
         """
         with flask_app.app_context():
-            logger.info("CUS1418 G2 worker_entered message_id=%s", message_id)
+            cus1418_probe.mark("G2_worker_entered", message_id)
             try:
                 # get conversation and message
                 conversation = self._get_conversation(conversation_id)
                 message = self._get_message(message_id)
-                logger.info("CUS1418 G3 conv_msg_loaded message_id=%s", message_id)
+                cus1418_probe.mark("G3_conv_msg_loaded", message_id)
 
                 # chatbot app
                 runner = ChatAppRunner()

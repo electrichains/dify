@@ -3,6 +3,7 @@ from typing import cast
 
 from sqlalchemy import select
 
+from core.app.apps import cus1418_probe
 from core.app.apps.base_app_queue_manager import AppQueueManager, PublishFrom
 from core.app.apps.base_app_runner import AppRunner
 from core.app.apps.chat.app_config_manager import ChatAppConfig
@@ -46,13 +47,13 @@ class ChatAppRunner(AppRunner):
         """
         app_config = application_generate_entity.app_config
         app_config = cast(ChatAppConfig, app_config)
-        logger.info("CUS1418 G4 runner_entered message_id=%s", message.id)
+        cus1418_probe.mark("G4_runner_entered", message.id)
         stmt = select(App).where(App.id == app_config.app_id)
         with create_session() as session:
             app_record = session.scalar(stmt)
             if app_record:
                 session.expunge(app_record)
-        logger.info("CUS1418 G5 app_loaded message_id=%s", message.id)
+        cus1418_probe.mark("G5_app_loaded", message.id)
         if not app_record:
             raise ValueError("App not found")
 
@@ -79,7 +80,7 @@ class ChatAppRunner(AppRunner):
             )
 
             memory = TokenBufferMemory(conversation=conversation, model_instance=model_instance)
-        logger.info("CUS1418 G6 memory_ready message_id=%s", message.id)
+        cus1418_probe.mark("G6_memory_ready", message.id)
 
         # organize all inputs and template to prompt messages
         # Include: prompt template, inputs, query(optional), files(optional)
@@ -94,10 +95,10 @@ class ChatAppRunner(AppRunner):
             memory=memory,
             image_detail_config=image_detail_config,
         )
-        logger.info("CUS1418 G7 prompt_organized message_id=%s", message.id)
+        cus1418_probe.mark("G7_prompt_organized", message.id)
 
         # moderation
-        logger.info("CUS1418 M1 moderation_enter message_id=%s", message.id)
+        cus1418_probe.mark("M1_moderation_enter", message.id)
         try:
             # process sensitive_word_avoidance
             _, inputs, query = self.moderation_for_inputs(
@@ -118,7 +119,7 @@ class ChatAppRunner(AppRunner):
             )
             return
 
-        logger.info("CUS1418 M2 moderation_done message_id=%s", message.id)
+        cus1418_probe.mark("M2_moderation_done", message.id)
 
         if query:
             # annotation reply
@@ -129,14 +130,14 @@ class ChatAppRunner(AppRunner):
                 user_id=application_generate_entity.user_id,
                 invoke_from=application_generate_entity.invoke_from,
             )
-            logger.info("CUS1418 M3 annotation_returned message_id=%s hit=%s", message.id, annotation_reply is not None)
+            cus1418_probe.mark("M3_annotation_returned", message.id, hit=annotation_reply is not None)
 
             if annotation_reply:
                 queue_manager.publish(
                     QueueAnnotationReplyEvent(message_annotation_id=annotation_reply.id),
                     PublishFrom.APPLICATION_MANAGER,
                 )
-                logger.info("CUS1418 M4 event_published message_id=%s", message.id)
+                cus1418_probe.mark("M4_event_published", message.id)
 
                 self.direct_output(
                     queue_manager=queue_manager,
@@ -145,7 +146,7 @@ class ChatAppRunner(AppRunner):
                     text=annotation_reply.content,
                     stream=application_generate_entity.stream,
                 )
-                logger.info("CUS1418 M5 direct_output_done message_id=%s", message.id)
+                cus1418_probe.mark("M5_direct_output_done", message.id)
                 return
 
         # fill in variable inputs from external data tools if exists

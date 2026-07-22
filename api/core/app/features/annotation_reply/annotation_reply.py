@@ -2,6 +2,7 @@ import logging
 
 from sqlalchemy import select
 
+from core.app.apps import cus1418_probe
 from core.app.entities.app_invoke_entities import InvokeFrom
 from core.rag.datasource.vdb.vector_factory import Vector
 from core.rag.index_processor.constant.index_type import IndexTechniqueType
@@ -28,16 +29,16 @@ class AnnotationReplyFeature:
         :param invoke_from: invoke from
         :return:
         """
-        logger.info("CUS1418 A annotation_query_enter message_id=%s", message.id)
+        cus1418_probe.mark("A_annotation_query_enter", message.id)
         stmt = select(AppAnnotationSetting).where(AppAnnotationSetting.app_id == app_record.id)
         annotation_setting = db.session.scalar(stmt)
-        logger.info("CUS1418 B setting_loaded message_id=%s found=%s", message.id, annotation_setting is not None)
+        cus1418_probe.mark("B_setting_loaded", message.id, found=annotation_setting is not None)
 
         if not annotation_setting:
             return None
 
         collection_binding_detail = annotation_setting.collection_binding_detail
-        logger.info("CUS1418 C binding_detail_loaded message_id=%s", message.id)
+        cus1418_probe.mark("C_binding_detail_loaded", message.id)
 
         if not collection_binding_detail:
             return None
@@ -50,7 +51,7 @@ class AnnotationReplyFeature:
             dataset_collection_binding = DatasetCollectionBindingService.get_dataset_collection_binding(
                 embedding_provider_name, embedding_model_name, CollectionBindingType.ANNOTATION
             )
-            logger.info("CUS1418 D collection_binding_resolved message_id=%s", message.id)
+            cus1418_probe.mark("D_collection_binding_resolved", message.id)
 
             dataset = Dataset(
                 id=app_record.id,
@@ -62,12 +63,12 @@ class AnnotationReplyFeature:
             )
 
             vector = Vector(dataset, attributes=["doc_id", "annotation_id", "app_id"])
-            logger.info("CUS1418 E vector_constructed message_id=%s", message.id)
+            cus1418_probe.mark("E_vector_constructed", message.id)
 
             documents = vector.search_by_vector(
                 query=query, top_k=1, score_threshold=score_threshold, filter={"group_id": [dataset.id]}
             )
-            logger.info("CUS1418 F search_returned message_id=%s hits=%s", message.id, len(documents or []))
+            cus1418_probe.mark("F_search_returned", message.id, hits=len(documents or []))
 
             if documents and documents[0].metadata:
                 annotation_id = documents[0].metadata["annotation_id"]
