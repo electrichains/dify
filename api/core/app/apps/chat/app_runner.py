@@ -46,11 +46,13 @@ class ChatAppRunner(AppRunner):
         """
         app_config = application_generate_entity.app_config
         app_config = cast(ChatAppConfig, app_config)
+        logger.info("CUS1418 G4 runner_entered message_id=%s", message.id)
         stmt = select(App).where(App.id == app_config.app_id)
         with create_session() as session:
             app_record = session.scalar(stmt)
             if app_record:
                 session.expunge(app_record)
+        logger.info("CUS1418 G5 app_loaded message_id=%s", message.id)
         if not app_record:
             raise ValueError("App not found")
 
@@ -77,6 +79,7 @@ class ChatAppRunner(AppRunner):
             )
 
             memory = TokenBufferMemory(conversation=conversation, model_instance=model_instance)
+        logger.info("CUS1418 G6 memory_ready message_id=%s", message.id)
 
         # organize all inputs and template to prompt messages
         # Include: prompt template, inputs, query(optional), files(optional)
@@ -91,6 +94,7 @@ class ChatAppRunner(AppRunner):
             memory=memory,
             image_detail_config=image_detail_config,
         )
+        logger.info("CUS1418 G7 prompt_organized message_id=%s", message.id)
 
         # moderation
         logger.info("CUS1418 M1 moderation_enter message_id=%s", message.id)

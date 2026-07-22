@@ -206,7 +206,9 @@ class ChatAppGenerator(MessageBasedAppGenerator):
 
             worker_thread = threading.Thread(target=worker_with_context)
 
+            logger.info("CUS1418 G0 thread_starting message_id=%s", message.id)
             worker_thread.start()
+            logger.info("CUS1418 G1 thread_started message_id=%s", message.id)
 
             # return response or stream generator
             response = self._handle_response(
@@ -238,10 +240,12 @@ class ChatAppGenerator(MessageBasedAppGenerator):
         :return:
         """
         with flask_app.app_context():
+            logger.info("CUS1418 G2 worker_entered message_id=%s", message_id)
             try:
                 # get conversation and message
                 conversation = self._get_conversation(conversation_id)
                 message = self._get_message(message_id)
+                logger.info("CUS1418 G3 conv_msg_loaded message_id=%s", message_id)
 
                 # chatbot app
                 runner = ChatAppRunner()
