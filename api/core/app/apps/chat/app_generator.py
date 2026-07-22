@@ -198,9 +198,13 @@ class ChatAppGenerator(MessageBasedAppGenerator):
             def worker_with_context():
                 # First statement of the greenlet body: proves it was scheduled.
                 cus1418_probe.mark("G1_5_greenlet_entered", message.id)
+                # Resolved on its own line so a hang here is distinguishable from
+                # one inside context.run().
+                flask_app_obj = current_app._get_current_object()  # type: ignore
+                cus1418_probe.mark("G1_6_app_obj_resolved", message.id)
                 return context.run(
                     self._generate_worker,
-                    flask_app=current_app._get_current_object(),  # type: ignore
+                    flask_app=flask_app_obj,
                     application_generate_entity=application_generate_entity,
                     queue_manager=queue_manager,
                     conversation_id=conversation.id,
@@ -244,6 +248,8 @@ class ChatAppGenerator(MessageBasedAppGenerator):
         :param message_id: message ID
         :return:
         """
+        # Before the app_context push, so a hang inside the push is visible.
+        cus1418_probe.mark("G1_7_worker_fn_entered", message_id)
         with flask_app.app_context():
             cus1418_probe.mark("G2_worker_entered", message_id)
             try:
