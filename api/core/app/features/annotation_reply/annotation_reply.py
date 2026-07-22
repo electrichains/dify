@@ -28,13 +28,16 @@ class AnnotationReplyFeature:
         :param invoke_from: invoke from
         :return:
         """
+        logger.info("CUS1418 A annotation_query_enter message_id=%s", message.id)
         stmt = select(AppAnnotationSetting).where(AppAnnotationSetting.app_id == app_record.id)
         annotation_setting = db.session.scalar(stmt)
+        logger.info("CUS1418 B setting_loaded message_id=%s found=%s", message.id, annotation_setting is not None)
 
         if not annotation_setting:
             return None
 
         collection_binding_detail = annotation_setting.collection_binding_detail
+        logger.info("CUS1418 C binding_detail_loaded message_id=%s", message.id)
 
         if not collection_binding_detail:
             return None
@@ -47,6 +50,7 @@ class AnnotationReplyFeature:
             dataset_collection_binding = DatasetCollectionBindingService.get_dataset_collection_binding(
                 embedding_provider_name, embedding_model_name, CollectionBindingType.ANNOTATION
             )
+            logger.info("CUS1418 D collection_binding_resolved message_id=%s", message.id)
 
             dataset = Dataset(
                 id=app_record.id,
@@ -58,10 +62,12 @@ class AnnotationReplyFeature:
             )
 
             vector = Vector(dataset, attributes=["doc_id", "annotation_id", "app_id"])
+            logger.info("CUS1418 E vector_constructed message_id=%s", message.id)
 
             documents = vector.search_by_vector(
                 query=query, top_k=1, score_threshold=score_threshold, filter={"group_id": [dataset.id]}
             )
+            logger.info("CUS1418 F search_returned message_id=%s hits=%s", message.id, len(documents or []))
 
             if documents and documents[0].metadata:
                 annotation_id = documents[0].metadata["annotation_id"]

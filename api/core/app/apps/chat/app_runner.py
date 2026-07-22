@@ -93,6 +93,7 @@ class ChatAppRunner(AppRunner):
         )
 
         # moderation
+        logger.info("CUS1418 M1 moderation_enter message_id=%s", message.id)
         try:
             # process sensitive_word_avoidance
             _, inputs, query = self.moderation_for_inputs(
@@ -113,6 +114,8 @@ class ChatAppRunner(AppRunner):
             )
             return
 
+        logger.info("CUS1418 M2 moderation_done message_id=%s", message.id)
+
         if query:
             # annotation reply
             annotation_reply = self.query_app_annotations_to_reply(
@@ -122,12 +125,14 @@ class ChatAppRunner(AppRunner):
                 user_id=application_generate_entity.user_id,
                 invoke_from=application_generate_entity.invoke_from,
             )
+            logger.info("CUS1418 M3 annotation_returned message_id=%s hit=%s", message.id, annotation_reply is not None)
 
             if annotation_reply:
                 queue_manager.publish(
                     QueueAnnotationReplyEvent(message_annotation_id=annotation_reply.id),
                     PublishFrom.APPLICATION_MANAGER,
                 )
+                logger.info("CUS1418 M4 event_published message_id=%s", message.id)
 
                 self.direct_output(
                     queue_manager=queue_manager,
@@ -136,6 +141,7 @@ class ChatAppRunner(AppRunner):
                     text=annotation_reply.content,
                     stream=application_generate_entity.stream,
                 )
+                logger.info("CUS1418 M5 direct_output_done message_id=%s", message.id)
                 return
 
         # fill in variable inputs from external data tools if exists
