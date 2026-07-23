@@ -114,7 +114,10 @@ services:
       - key: DEPLOY_ENV
         value: PRODUCTION
       - key: SECRET_KEY
-        generateValue: true
+        fromService:
+          type: web
+          name: dify-api
+          envVarKey: SECRET_KEY
       - key: DB_TYPE
         value: postgresql
       - key: DB_USERNAME
@@ -222,8 +225,11 @@ services:
     region: oregon
     image:
       url: docker.io/semitechnologies/weaviate:1.27.0
+    dockerCommand: weaviate --host 0.0.0.0 --port $PORT --scheme http
     healthCheckPath: /health
     envVars:
+      - key: PORT
+        value: "8080"
       - key: PERSISTENCE_DATA_PATH
         value: /var/lib/weaviate
       - key: AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED
