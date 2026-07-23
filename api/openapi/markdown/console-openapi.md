@@ -17313,6 +17313,12 @@ Default model entity.
 | tool_name | string |  | Yes |
 | type | string |  | Yes |
 
+#### DeploymentEdition
+
+| Name | Type | Description | Required |
+| ---- | ---- | ----------- | -------- |
+| DeploymentEdition | string |  |  |
+
 #### DismissNotificationPayload
 
 | Name | Type | Description | Required |
@@ -22021,6 +22027,7 @@ Model class for provider system configuration response.
 | Name | Type | Description | Required |
 | ---- | ---- | ----------- | -------- |
 | branding | [BrandingModel](#brandingmodel) |  | Yes |
+| deployment_edition | [DeploymentEdition](#deploymentedition) |  | Yes |
 | enable_app_deploy | boolean |  | Yes |
 | enable_change_email | boolean, <br>**Default:** true |  | Yes |
 | enable_collaboration_mode | boolean, <br>**Default:** true |  | Yes |
