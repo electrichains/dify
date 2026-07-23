@@ -45,6 +45,7 @@ const loggedInQueryResult = {
   data: {
     profile: {
       id: 'account-id',
+      email: 'invitee@example.com',
     },
   },
   error: null,
@@ -69,6 +70,16 @@ const nonInviteQueryResult = {
   data: undefined,
 }
 
+const mockQueryResults = (
+  profileResult: ReturnType<typeof useQuery>,
+  inviteResult: ReturnType<typeof useQuery>,
+) => {
+  mockUseQuery.mockImplementation((options) => {
+    const queryKey = options.queryKey as readonly unknown[]
+    return (queryKey[0] === 'account' ? profileResult : inviteResult) as ReturnType<typeof useQuery>
+  })
+}
+
 describe('NormalForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -80,9 +91,10 @@ describe('NormalForm', () => {
     it('should send logged-in visitors without a redirect target to the console home', async () => {
       const searchParams = new URLSearchParams()
       mockUseSearchParams.mockReturnValue(searchParams)
-      mockUseQuery
-        .mockReturnValueOnce(loggedInQueryResult as unknown as ReturnType<typeof useQuery>)
-        .mockReturnValueOnce(nonInviteQueryResult as unknown as ReturnType<typeof useQuery>)
+      mockQueryResults(
+        loggedInQueryResult as unknown as ReturnType<typeof useQuery>,
+        nonInviteQueryResult as unknown as ReturnType<typeof useQuery>,
+      )
 
       render(<NormalForm />)
 
@@ -95,9 +107,10 @@ describe('NormalForm', () => {
       mockUseSearchParams.mockReturnValue(
         new URLSearchParams('redirect_url=https%3A%2F%2Fgoogle.com'),
       )
-      mockUseQuery
-        .mockReturnValueOnce(loggedInQueryResult as unknown as ReturnType<typeof useQuery>)
-        .mockReturnValueOnce(nonInviteQueryResult as unknown as ReturnType<typeof useQuery>)
+      mockQueryResults(
+        loggedInQueryResult as unknown as ReturnType<typeof useQuery>,
+        nonInviteQueryResult as unknown as ReturnType<typeof useQuery>,
+      )
 
       render(<NormalForm />)
 
@@ -110,9 +123,55 @@ describe('NormalForm', () => {
   describe('Invite Redirects', () => {
     it('should send logged-in invite visitors to the invite confirmation page', async () => {
       mockUseSearchParams.mockReturnValue(new URLSearchParams('invite_token=invite-token'))
-      mockUseQuery
-        .mockReturnValueOnce(loggedInQueryResult as unknown as ReturnType<typeof useQuery>)
-        .mockReturnValueOnce(invitationQueryResult as unknown as ReturnType<typeof useQuery>)
+      mockQueryResults(
+        loggedInQueryResult as unknown as ReturnType<typeof useQuery>,
+        invitationQueryResult as unknown as ReturnType<typeof useQuery>,
+      )
+
+      render(<NormalForm />)
+
+      await waitFor(() => {
+        expect(mockReplace).toHaveBeenCalledWith(
+          '/signin/invite-settings?invite_token=invite-token',
+        )
+      })
+    })
+
+    it('should keep a different logged-in account on the invitation sign-in form', () => {
+      mockUseSearchParams.mockReturnValue(new URLSearchParams('invite_token=invite-token'))
+      mockQueryResults(
+        {
+          ...loggedInQueryResult,
+          data: {
+            profile: {
+              id: 'account-id',
+              email: 'current@example.com',
+            },
+          },
+        } as unknown as ReturnType<typeof useQuery>,
+        invitationQueryResult as unknown as ReturnType<typeof useQuery>,
+      )
+
+      render(<NormalForm />)
+
+      expect(screen.getByRole('button', { name: 'login.signBtn' })).toBeInTheDocument()
+      expect(mockReplace).not.toHaveBeenCalled()
+    })
+
+    it('should match the logged-in account email case-insensitively', async () => {
+      mockUseSearchParams.mockReturnValue(new URLSearchParams('invite_token=invite-token'))
+      mockQueryResults(
+        {
+          ...loggedInQueryResult,
+          data: {
+            profile: {
+              id: 'account-id',
+              email: 'Invitee@Example.com',
+            },
+          },
+        } as unknown as ReturnType<typeof useQuery>,
+        invitationQueryResult as unknown as ReturnType<typeof useQuery>,
+      )
 
       render(<NormalForm />)
 
@@ -129,7 +188,10 @@ describe('NormalForm', () => {
       mockUseSearchParams.mockReturnValue(
         new URLSearchParams('redirect_url=%2Fapps%3Ftag%3Dworkflow&source=pricing'),
       )
-      mockUseQuery.mockReturnValue(nonInviteQueryResult as unknown as ReturnType<typeof useQuery>)
+      mockQueryResults(
+        nonInviteQueryResult as unknown as ReturnType<typeof useQuery>,
+        nonInviteQueryResult as unknown as ReturnType<typeof useQuery>,
+      )
       render(<NormalForm />, {
         systemFeatures: {
           is_allow_register: true,
