@@ -164,7 +164,7 @@ def approval_grant_cookie_kwargs(value: str) -> dict:
         "path": APPROVAL_GRANT_COOKIE_PATH,
         "secure": is_secure(),
         "httponly": True,
-        "samesite": "Lax",
+        "samesite": "None",
     }
 
 

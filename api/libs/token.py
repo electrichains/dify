@@ -94,7 +94,7 @@ def extract_webapp_passport(app_code: str, request: Request) -> str | None:
     )
 
 
-def set_access_token_to_cookie(request: Request, response: Response, token: str, samesite: str = "Lax"):
+def set_access_token_to_cookie(request: Request, response: Response, token: str, samesite: str = "None"):
     response.set_cookie(
         _real_cookie_name(COOKIE_NAME_ACCESS_TOKEN),
         value=token,
@@ -114,7 +114,7 @@ def set_refresh_token_to_cookie(request: Request, response: Response, token: str
         httponly=True,
         domain=_cookie_domain(),
         secure=is_secure(),
-        samesite="Lax",
+        samesite="None",
         max_age=int(60 * 60 * 24 * dify_config.REFRESH_TOKEN_EXPIRE_DAYS),
         path="/",
     )
@@ -127,7 +127,7 @@ def set_csrf_token_to_cookie(request: Request, response: Response, token: str):
         httponly=False,
         domain=_cookie_domain(),
         secure=is_secure(),
-        samesite="Lax",
+        samesite="None",
         max_age=int(60 * dify_config.ACCESS_TOKEN_EXPIRE_MINUTES),
         path="/",
     )
@@ -136,7 +136,7 @@ def set_csrf_token_to_cookie(request: Request, response: Response, token: str):
 def _clear_cookie(
     response: Response,
     cookie_name: str,
-    samesite: str = "Lax",
+    samesite: str = "None",
     http_only: bool = True,
 ):
     response.set_cookie(
@@ -151,11 +151,11 @@ def _clear_cookie(
     )
 
 
-def clear_access_token_from_cookie(response: Response, samesite: str = "Lax"):
+def clear_access_token_from_cookie(response: Response, samesite: str = "None"):
     _clear_cookie(response, COOKIE_NAME_ACCESS_TOKEN, samesite)
 
 
-def clear_webapp_access_token_from_cookie(response: Response, samesite: str = "Lax"):
+def clear_webapp_access_token_from_cookie(response: Response, samesite: str = "None"):
     _clear_cookie(response, COOKIE_NAME_WEBAPP_ACCESS_TOKEN, samesite)
 
 
