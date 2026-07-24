@@ -54,6 +54,8 @@ def create_flask_app_with_configs() -> DifyApp:
     dify_app = DifyApp(__name__)
     dify_app.config.from_mapping(dify_config.model_dump())
     dify_app.config["RESTX_INCLUDE_ALL_MODELS"] = True
+    dify_app.config["SESSION_COOKIE_SAMESITE"] = "None"
+    dify_app.config["SESSION_COOKIE_SECURE"] = True
 
     # add before request hook
     @dify_app.before_request
