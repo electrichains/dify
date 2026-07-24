@@ -9,6 +9,8 @@ const allowedDevOrigins = process.env.NEXT_ALLOWED_DEV_ORIGINS?.split(',')
   .map((origin) => origin.trim())
   .filter(Boolean)
 
+const apiTarget = process.env.API_TARGET || 'https://dify-api-j2fo.onrender.com'
+
 const nextConfig: NextConfig = {
   basePath: env.NEXT_PUBLIC_BASE_PATH,
   ...(allowedDevOrigins?.length ? { allowedDevOrigins } : {}),
@@ -25,6 +27,18 @@ const nextConfig: NextConfig = {
   typescript: {
     // https://nextjs.org/docs/api-reference/next.config.js/ignoring-typescript-errors
     ignoreBuildErrors: true,
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/console/api/:path*',
+        destination: `${apiTarget}/console/api/:path*`,
+      },
+      {
+        source: '/api/:path*',
+        destination: `${apiTarget}/api/:path*`,
+      },
+    ]
   },
   async redirects() {
     return [
